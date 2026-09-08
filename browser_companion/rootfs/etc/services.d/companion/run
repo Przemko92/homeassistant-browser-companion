@@ -1,2 +1,3 @@
 #!/bin/sh
+echo "[companion] starting session API on :8100"
 exec /usr/bin/python3 -u /opt/companion/server.py

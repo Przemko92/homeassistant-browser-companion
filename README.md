@@ -16,6 +16,8 @@ Nie rozwiązuje captchy i nie wypełnia formularzy.
 3. Zainstaluj **Browser Companion** i uruchom
 4. W sidebarze pojawi się panel Chromium
 
+Po aktualizacji: Dodatki → Browser Companion → **Rebuild** (albo odinstaluj i zainstaluj ponownie). W logach po starcie powinno być `loading service 'companion'` oraz `[companion] starting session API on :8100`.
+
 ## API (dla integracji)
 
 Baza: `http://{hostname}:8100`  

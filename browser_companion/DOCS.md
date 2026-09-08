@@ -8,7 +8,7 @@ Chromium typically needs about 1 GB of RAM. Disable unused add-ons if the host i
 
 ## Ingress
 
-The sidebar panel shows session status and proxies Chromium's web UI. If the embedded view is blank, expose port **5800** in the add-on network settings and open that URL instead.
+The sidebar panel is Chromium's web UI on port 5800. The session API stays on 8100 for integrations (not through Ingress). If the sidebar is blank, expose port **5800** in the add-on network settings.
 
 ## API
 
