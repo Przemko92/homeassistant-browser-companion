@@ -1,0 +1,6 @@
+configuration:
+  name: Browser Companion
+  description: Chromium for Home Assistant integrations. Sign in in the sidebar; the add-on captures redirect URLs.
+network:
+  8100/tcp: Session API (leave unpublished)
+  5800/tcp: Chromium UI fallback

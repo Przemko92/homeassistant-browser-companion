@@ -1,0 +1,35 @@
+name: Browser Companion
+version: "0.1.0"
+slug: browser_companion
+description: Generic Chromium for Home Assistant integrations. The user signs in; the add-on captures redirect URLs for the calling integration.
+url: https://github.com/test/homeassistant-browser-companion
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: services
+boot: auto
+ingress: true
+ingress_port: 8100
+ingress_stream: true
+panel_icon: mdi:google-chrome
+panel_title: Browser Companion
+panel_admin: true
+apparmor: false
+map:
+  - addon_config:rw
+ports:
+  8100/tcp: null
+  5800/tcp: null
+ports_description:
+  8100/tcp: Session API for integrations (keep unpublished on the host)
+  5800/tcp: Chromium web UI if Ingress path proxy fails
+environment:
+  CHROMIUM_REMOTE_DEBUGGING: "1"
+  CHROMIUM_REMOTE_DEBUGGING_PORT: "9222"
+  KEEP_APP_RUNNING: "1"
+  DISPLAY_WIDTH: "1280"
+  DISPLAY_HEIGHT: "800"
+  WEB_FILE_MANAGER: "0"
+  WEB_AUDIO: "0"
+  WEB_AUTHENTICATION: "0"

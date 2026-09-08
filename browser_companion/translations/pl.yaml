@@ -1,0 +1,6 @@
+configuration:
+  name: Browser Companion
+  description: Chromium dla integracji Home Assistant. Zaloguj się w panelu bocznym; dodatek przechwytuje adres przekierowania.
+network:
+  8100/tcp: API sesji (nie publikuj na hoście)
+  5800/tcp: Chromium, gdy Ingress nie działa

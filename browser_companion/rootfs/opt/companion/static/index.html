@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Browser Companion</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #111; color: #eee; }
+    #bar {
+      display: flex; gap: 12px; align-items: center; padding: 8px 12px;
+      background: #1c1c1c; border-bottom: 1px solid #333; font-size: 14px;
+    }
+    #status { font-weight: 600; }
+    iframe { border: 0; width: 100%; height: calc(100% - 42px); }
+    a { color: #8ab4f8; }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <span>Browser Companion</span>
+    <span id="status">no session</span>
+    <span id="hint"></span>
+  </div>
+  <iframe id="chrome" title="Chromium" src="chrome/"></iframe>
+  <script>
+    async function tick() {
+      try {
+        const res = await fetch("v1/health");
+        const data = await res.json();
+        const session = data.session;
+        const el = document.getElementById("status");
+        const hint = document.getElementById("hint");
+        if (!session) {
+          el.textContent = "idle — waiting for an integration";
+          hint.textContent = "";
+          return;
+        }
+        el.textContent = session.status + (session.client_id ? " (" + session.client_id + ")" : "");
+        if (session.status === "pending") {
+          hint.textContent = "Sign in below. Do not close this tab until the integration finishes.";
+        } else if (session.status === "captured") {
+          hint.textContent = "Captured. You can return to the integration.";
+        } else {
+          hint.textContent = session.error || "";
+        }
+      } catch (err) {
+        document.getElementById("status").textContent = "api unreachable";
+      }
+    }
+    tick();
+    setInterval(tick, 2000);
+  </script>
+</body>
+</html>
