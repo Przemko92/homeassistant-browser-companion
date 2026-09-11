@@ -153,5 +153,5 @@ python -m build
 twine upload dist/*
 ```
 
-GitHub Actions `.github/workflows/publish.yml` is manual only (`workflow_dispatch`) and has no PyPI token.
+GitHub Actions `.github/workflows/publish.yml` is manual only (`workflow_dispatch`) and uploads with the `PYPI_API_TOKEN` repository secret.
 
