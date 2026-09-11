@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add-on store icon and logo (`browser_companion/icon.png`, `logo.png`)
 - PyPI package `ha-browser-companion` in [`python/`](python/): HTTP client plus `CompanionLoginFlow` so custom components do not copy helper modules
 
 ## 0.2.0

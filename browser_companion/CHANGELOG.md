@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add-on store icon and logo
 - Custom components should use the `ha-browser-companion` PyPI package (`python/` in this repository) instead of copying a helper module
 
 ## 0.2.0
