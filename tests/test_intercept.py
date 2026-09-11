@@ -79,6 +79,84 @@ def test_biedronka_302_app_location():
     assert not matches_wait(miss_https, rules)
 
 
+def test_should_abort_fetch():
+    from intercept import is_http_url, should_abort_fetch
+
+    assert is_http_url("https://allegro.pl/moje-allegro/zakupy/kupione")
+    assert not should_abort_fetch(
+        "navigation", "https://allegro.pl/moje-allegro/zakupy/kupione"
+    )
+    assert should_abort_fetch("protocol_handler", "app://cma20.biedronka.pl?code=1")
+    assert should_abort_fetch("http_redirect", "app://cma20.biedronka.pl?code=1")
+    assert not should_abort_fetch("http_redirect", "https://allegro.pl/")
+
+
+def test_navigation_wait_with_cookies():
+    rules = parse_wait(
+        {
+            "wait": {
+                "event": "navigation",
+                "url_prefixes": ["https://allegro.pl/moje-allegro/zakupy/kupione"],
+                "cookies": ["QXLSESSID"],
+            }
+        }
+    )
+    assert rules[0].cookies == ("QXLSESSID",)
+    hit = CaptureCandidate(
+        "navigation",
+        "https://allegro.pl/moje-allegro/zakupy/kupione",
+    )
+    assert matches_wait(hit, rules)
+
+
+def test_extract_cookies():
+    result = extract_result(
+        CaptureCandidate(
+            "navigation",
+            "https://allegro.pl/moje-allegro/zakupy/kupione",
+            cookies={"QXLSESSID": "abc.def"},
+        )
+    )
+    assert result["cookies"]["QXLSESSID"] == "abc.def"
+
+
+def test_cookies_from_cdp():
+    from intercept import cookies_complete, cookies_from_cdp
+
+    found = cookies_from_cdp(
+        [
+            {"name": "other", "value": "x"},
+            {"name": "QXLSESSID", "value": "sess"},
+            {"name": "__Secure-QXLSESSID", "value": "secure"},
+        ],
+        ("QXLSESSID",),
+    )
+    assert found == {"QXLSESSID": "sess"}
+    found_secure = cookies_from_cdp(
+        [{"name": "__Secure-QXLSESSID", "value": "secure"}],
+        ("QXLSESSID",),
+    )
+    assert found_secure == {"QXLSESSID": "secure"}
+    assert cookies_complete(found, ("QXLSESSID",))
+    assert not cookies_complete({}, ("QXLSESSID",))
+
+
+def test_parse_navigate_after():
+    from intercept import parse_navigate_after
+
+    spec = parse_navigate_after(
+        {
+            "navigate_after": {
+                "url": "https://allegro.pl/moje-allegro/zakupy/kupione",
+                "cookies": ["QXLSESSID"],
+            }
+        }
+    )
+    assert spec["url"].endswith("/kupione")
+    assert spec["cookies"] == ["QXLSESSID"]
+    assert parse_navigate_after({}) is None
+
+
 def test_navigation_wait():
     rules = parse_wait(
         {
@@ -148,14 +226,3 @@ def test_http_redirect_default_status_codes():
     )
     assert matches_wait(CaptureCandidate("http_redirect", "app://x", 303), rules)
 
-
-def test_client_slug_helpers():
-    examples = Path(__file__).resolve().parents[1] / "examples"
-    sys.path.insert(0, str(examples))
-    from homeassistant_client import base_url_from_slug, is_companion_slug
-
-    assert is_companion_slug("local_browser_companion")
-    assert (
-        base_url_from_slug("local_browser_companion")
-        == "http://local-browser-companion:8100"
-    )

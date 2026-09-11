@@ -14,6 +14,7 @@ class CaptureCandidate:
     event: str
     url: str
     status_code: int | None = None
+    cookies: dict[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,7 @@ class WaitRule:
     status_codes: tuple[int, ...]
     prefixes: tuple[str, ...]
     schemes: tuple[str, ...]
+    cookies: tuple[str, ...] = ()
 
     def schemes_to_register(self) -> tuple[str, ...]:
         if self.event != "protocol_handler":
@@ -83,24 +85,39 @@ def _parse_rule(item: object) -> WaitRule:
     event = str(item.get("event") or "").strip()
     if event not in EVENTS:
         raise WaitSpecError("wait_event_unknown")
+    cookies = _as_str_list(item.get("cookies"))
     if event == "http_redirect":
         prefixes = _as_str_list(item.get("location_prefixes"))
         schemes = _as_str_list(item.get("location_schemes"))
         statuses = _as_int_list(item.get("status_codes"), DEFAULT_REDIRECT_STATUSES)
         if not prefixes and not schemes:
             raise WaitSpecError("wait_location_required")
-        return WaitRule(event, statuses, prefixes, schemes)
+        return WaitRule(event, statuses, prefixes, schemes, cookies)
     if event == "navigation":
         prefixes = _as_str_list(item.get("url_prefixes") or item.get("prefixes"))
         schemes = _as_str_list(item.get("url_schemes") or item.get("schemes"))
         if not prefixes and not schemes:
             raise WaitSpecError("wait_url_required")
-        return WaitRule(event, (), prefixes, schemes)
+        return WaitRule(event, (), prefixes, schemes, cookies)
     schemes = _as_str_list(item.get("schemes"))
     prefixes = _as_str_list(item.get("url_prefixes"))
     if not schemes and not prefixes:
         raise WaitSpecError("wait_scheme_required")
-    return WaitRule(event, (), prefixes, schemes)
+    return WaitRule(event, (), prefixes, schemes, cookies)
+
+
+def is_http_url(url: str) -> bool:
+    scheme = (urlparse(url or "").scheme or "").lower()
+    return scheme in {"http", "https"}
+
+
+def should_abort_fetch(event: str, url: str) -> bool:
+    """Abort the intercepted request only when loading it would leave Chromium."""
+    if event == "protocol_handler":
+        return True
+    if event == "http_redirect":
+        return not is_http_url(url)
+    return False
 
 
 def url_matches(url: str, prefixes: tuple[str, ...], schemes: tuple[str, ...]) -> bool:
@@ -118,10 +135,26 @@ def url_matches(url: str, prefixes: tuple[str, ...], schemes: tuple[str, ...]) -
     return False
 
 
-def matches_wait(candidate: CaptureCandidate, rules: list[WaitRule]) -> bool:
+def parse_navigate_after(body: dict) -> dict | None:
+    """Optional: after listed cookies exist, navigate to url (e.g. post-login)."""
+    raw = body.get("navigate_after")
+    if raw is None or raw == {}:
+        return None
+    if not isinstance(raw, dict):
+        raise WaitSpecError("navigate_after_invalid")
+    url = str(raw.get("url") or "").strip()
+    cookies = _as_str_list(raw.get("cookies"))
+    if not url or not cookies:
+        raise WaitSpecError("navigate_after_invalid")
+    return {"url": url, "cookies": list(cookies)}
+
+
+def matching_rule(
+    candidate: CaptureCandidate, rules: list[WaitRule]
+) -> WaitRule | None:
     raw = (candidate.url or "").strip()
     if not raw or candidate.event not in EVENTS:
-        return False
+        return None
     for rule in rules:
         if candidate.event != rule.event:
             continue
@@ -129,11 +162,15 @@ def matches_wait(candidate: CaptureCandidate, rules: list[WaitRule]) -> bool:
             if candidate.status_code not in rule.status_codes:
                 continue
             if url_matches(raw, rule.prefixes, rule.schemes):
-                return True
+                return rule
             continue
         if url_matches(raw, rule.prefixes, rule.schemes):
-            return True
-    return False
+            return rule
+    return None
+
+
+def matches_wait(candidate: CaptureCandidate, rules: list[WaitRule]) -> bool:
+    return matching_rule(candidate, rules) is not None
 
 
 def extract_result(candidate: CaptureCandidate) -> dict:
@@ -152,7 +189,32 @@ def extract_result(candidate: CaptureCandidate) -> dict:
     payload: dict = {"url": raw, "query": flat, "event": candidate.event}
     if candidate.status_code is not None:
         payload["status_code"] = candidate.status_code
+    if candidate.cookies:
+        payload["cookies"] = dict(candidate.cookies)
     return payload
+
+
+def cookies_from_cdp(raw: list[dict] | None, names: tuple[str, ...]) -> dict[str, str]:
+    """Map CDP cookie objects to {name: value} for the requested names."""
+    if not names:
+        return {}
+    wanted = {name.lower(): name for name in names}
+    found: dict[str, str] = {}
+    for item in raw or []:
+        name = str(item.get("name") or "")
+        lower = name.lower()
+        aliases = [lower]
+        for prefix in ("__secure-", "__host-"):
+            if lower.startswith(prefix):
+                aliases.append(lower[len(prefix) :])
+        key = next((wanted[alias] for alias in aliases if alias in wanted), None)
+        if key and key not in found:
+            found[key] = str(item.get("value") or "")
+    return found
+
+
+def cookies_complete(found: dict[str, str], names: tuple[str, ...]) -> bool:
+    return all(bool(found.get(name)) for name in names)
 
 
 def location_from_headers(headers: list[dict] | None) -> str | None:

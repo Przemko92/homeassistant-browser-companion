@@ -8,6 +8,7 @@ services:
     environment:
       CHROMIUM_REMOTE_DEBUGGING: "1"
       CHROMIUM_REMOTE_DEBUGGING_PORT: "9222"
+      CHROMIUM_CUSTOM_ARGS: "--incognito"
       KEEP_APP_RUNNING: "1"
       DISPLAY_WIDTH: "1280"
       DISPLAY_HEIGHT: "800"

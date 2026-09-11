@@ -8,6 +8,7 @@ sys.path.insert(0, str(ROOT))
 
 from intercept import CaptureCandidate, extract_result, parse_wait  # noqa: E402
 from session import SessionStore  # noqa: E402
+from cdp import prompt_chose_close  # noqa: E402
 
 
 def _rules():
@@ -71,3 +72,50 @@ def test_replace_drops_previous():
     assert store.get(first.id) is None
     assert store.get(second.id) is not None
     assert store.get(second.id).status == "pending"
+
+
+def test_capture_includes_cookies():
+    store = SessionStore()
+    session = store.replace(
+        client_id="allegro",
+        start_url="https://allegro.pl",
+        wait_rules=_rules(),
+        timeout_seconds=60,
+        navigate_after={
+            "url": "https://allegro.pl/moje-allegro/zakupy/kupione",
+            "cookies": ["QXLSESSID"],
+        },
+    )
+    assert session.navigate_after["cookies"] == ["QXLSESSID"]
+    store.capture(
+        {
+            "url": "https://allegro.pl/moje-allegro/zakupy/kupione",
+            "query": {},
+            "event": "navigation",
+            "cookies": {"QXLSESSID": "tok"},
+        }
+    )
+    public = store.get(session.id).to_public()
+    assert public["cookies"]["QXLSESSID"] == "tok"
+
+
+def test_success_message_stored():
+    store = SessionStore()
+    session = store.replace(
+        client_id="allegro",
+        start_url="https://allegro.pl",
+        wait_rules=_rules(),
+        timeout_seconds=60,
+        success_message="Signed in. Click OK to close.",
+    )
+    assert session.success_message == "Signed in. Click OK to close."
+
+
+def test_prompt_chose_close_keep_open():
+    assert prompt_chose_close({"result": {"result": {"type": "boolean", "value": False}}}) is False
+
+
+def test_prompt_chose_close_defaults_to_close():
+    assert prompt_chose_close({"result": {"result": {"type": "boolean", "value": True}}}) is True
+    assert prompt_chose_close({}) is True
+    assert prompt_chose_close(None) is True

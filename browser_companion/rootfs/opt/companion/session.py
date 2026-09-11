@@ -21,6 +21,8 @@ class Session:
     status: str = "pending"  # pending | captured | expired | error
     result: dict[str, Any] | None = None
     error: str | None = None
+    navigate_after: dict[str, Any] | None = None
+    success_message: str | None = None
 
     def is_timed_out(self) -> bool:
         return time.time() - self.created_at >= self.timeout_seconds
@@ -37,6 +39,8 @@ class Session:
             payload["event"] = self.result.get("event")
             if self.result.get("status_code") is not None:
                 payload["status_code"] = self.result.get("status_code")
+            if self.result.get("cookies"):
+                payload["cookies"] = self.result.get("cookies")
         if self.status == "error" and self.error:
             payload["error"] = self.error
         return payload
@@ -60,6 +64,8 @@ class SessionStore:
         start_url: str,
         wait_rules: list[WaitRule],
         timeout_seconds: int,
+        navigate_after: dict[str, Any] | None = None,
+        success_message: str | None = None,
     ) -> Session:
         session = Session(
             id=str(uuid.uuid4()),
@@ -67,6 +73,8 @@ class SessionStore:
             start_url=start_url,
             wait_rules=wait_rules,
             timeout_seconds=timeout_seconds,
+            navigate_after=navigate_after,
+            success_message=success_message,
         )
         self._current = session
         return session

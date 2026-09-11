@@ -9,13 +9,14 @@ from pathlib import Path
 
 from aiohttp import ClientSession, WSMsgType, web
 
-from cdp import CdpController
+from cdp import DEFAULT_SUCCESS_MESSAGE, CdpController
 from handlers import register_schemes
 from intercept import (
     CaptureCandidate,
     WaitSpecError,
     extract_result,
     matches_wait,
+    parse_navigate_after,
     parse_wait,
     protocol_schemes,
 )
@@ -41,17 +42,19 @@ def _peer_is_local(request: web.Request) -> bool:
     return peer in {"127.0.0.1", "::1"}
 
 
-async def _capture_candidate(candidate: CaptureCandidate) -> None:
+async def _capture_candidate(candidate: CaptureCandidate) -> bool:
     session = store.current
     if session is None or session.status != "pending":
-        return
+        return False
     if not matches_wait(candidate, session.wait_rules):
-        return
+        return False
     result = extract_result(candidate)
     if store.capture(result):
         _LOGGER.info(
             "Captured %s for session %s", candidate.event, session.id
         )
+        return True
+    return False
 
 
 async def _start_browser(session_id: str, start_url: str) -> None:
@@ -66,14 +69,21 @@ async def _start_browser(session_id: str, start_url: str) -> None:
             return False
         return matches_wait(candidate, rules)
 
-    async def capture(candidate: CaptureCandidate) -> None:
+    async def capture(candidate: CaptureCandidate) -> bool:
         if store.get(session_id) is None:
-            return
-        await _capture_candidate(candidate)
+            return False
+        return await _capture_candidate(candidate)
 
     try:
         register_schemes(protocol_schemes(rules))
-        await cdp.start_session(start_url, match, capture)
+        await cdp.start_session(
+            start_url,
+            match,
+            capture,
+            wait_rules=rules,
+            navigate_after=current.navigate_after,
+            success_message=current.success_message,
+        )
     except Exception:  # noqa: BLE001
         _LOGGER.exception("Failed to start browser session")
         session = store.get(session_id)
@@ -106,6 +116,7 @@ async def handle_create_session(request: web.Request) -> web.Response:
         return web.json_response({"error": "start_url_required"}, status=400)
     try:
         wait_rules = parse_wait(body)
+        navigate_after = parse_navigate_after(body)
     except WaitSpecError as err:
         return web.json_response({"error": str(err)}, status=400)
     try:
@@ -114,11 +125,17 @@ async def handle_create_session(request: web.Request) -> web.Response:
         timeout = DEFAULT_TIMEOUT
     timeout = max(30, min(timeout, MAX_TIMEOUT))
     client_id = str(body.get("client_id") or "unknown")[:64]
+    success_message = str(body.get("success_message") or DEFAULT_SUCCESS_MESSAGE).strip()
+    if not success_message:
+        success_message = DEFAULT_SUCCESS_MESSAGE
+    success_message = success_message[:500]
     session = store.replace(
         client_id=client_id,
         start_url=start_url,
         wait_rules=wait_rules,
         timeout_seconds=timeout,
+        navigate_after=navigate_after,
+        success_message=success_message,
     )
     asyncio.create_task(_start_browser(session.id, start_url), name="companion-start")
     return web.json_response(session.to_public(), status=201)
@@ -150,7 +167,9 @@ async def handle_internal_capture(request: web.Request) -> web.Response:
     url = str(body.get("url") or "").strip()
     if not url:
         return web.json_response({"error": "url_required"}, status=400)
-    await _capture_candidate(CaptureCandidate("protocol_handler", url))
+    captured = await _capture_candidate(CaptureCandidate("protocol_handler", url))
+    if captured:
+        cdp.schedule_close()
     return web.json_response({"ok": True})
 
 
