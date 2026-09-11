@@ -153,5 +153,5 @@ python -m build
 twine upload dist/*
 ```
 
-Or create a GitHub Release: `.github/workflows/publish.yml` publishes with trusted publishing. On PyPI, add a trusted publisher for this GitHub repository (workflow `publish.yml`).
+GitHub Actions `.github/workflows/publish.yml` is manual only (`workflow_dispatch`) and has no PyPI token.
 
