@@ -21,7 +21,6 @@ KNOWN_SLUGS = ("local_browser_companion", "browser_companion")
 FALLBACK_SLUG = KNOWN_SLUGS[0]
 FALLBACK_BASE_URL = f"http://{FALLBACK_SLUG.replace('_', '-')}:{API_PORT}"
 RUNNING_STATES = frozenset({"started", "startup", "running", ""})
-INGRESS_REDIRECT = "https://my.home-assistant.io/redirect/supervisor_ingress/"
 
 
 class CompanionError(Exception):
@@ -73,12 +72,12 @@ def slug_from_api_base(base_url: str) -> str:
 
 def ingress_path(slug: str) -> str:
     """Frontend route that opens the add-on Ingress UI (sidebar panel)."""
-    return f"/hassio/ingress/{slug}"
+    return f"/{slug}"
 
 
 def companion_redirect_href(slug: str) -> str:
-    """my.home-assistant.io link that opens the add-on Ingress panel."""
-    return f"{INGRESS_REDIRECT}?addon={slug}"
+    """Same-origin panel path that opens the add-on Ingress UI."""
+    return ingress_path(slug)
 
 
 def companion_ui_url(hass: Any, slug: str) -> str:
@@ -99,9 +98,10 @@ def companion_ui_url(hass: Any, slug: str) -> str:
 
 def companion_placeholders(hass: Any, slug: str) -> dict[str, str]:
     """Placeholders for config-flow translations (`companion_url`, `companion_href`)."""
+    url = companion_ui_url(hass, slug)
     return {
-        "companion_url": companion_ui_url(hass, slug),
-        "companion_href": companion_redirect_href(slug),
+        "companion_url": url,
+        "companion_href": url,
     }
 
 

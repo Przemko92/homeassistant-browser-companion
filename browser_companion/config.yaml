@@ -1,5 +1,5 @@
 name: Browser Companion
-version: "0.2.0"
+version: "0.2.1"
 slug: browser_companion
 description: Generic Chromium for Home Assistant integrations. The user signs in; the add-on captures redirect URLs for the calling integration.
 url: https://github.com/Przemko92/homeassistant-browser-companion

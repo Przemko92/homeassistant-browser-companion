@@ -10,7 +10,7 @@ In `manifest.json`:
 
 ```json
 {
-  "requirements": ["ha-browser-companion>=0.1.0"]
+  "requirements": ["ha-browser-companion>=0.1.1"]
 }
 ```
 
@@ -85,7 +85,7 @@ The mixin uses these keys. Copy them and change the surrounding sentences:
 }
 ```
 
-Placeholders: `companion_url` (Ingress path or absolute URL), `companion_href` (`my.home-assistant.io` redirect that opens the sidebar panel).
+Placeholders: `companion_url` and `companion_href` are the same sidebar panel URL (`/{slug}`, or an absolute URL from Home Assistant `get_url`).
 
 ## Low-level client
 

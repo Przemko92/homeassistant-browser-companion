@@ -92,19 +92,16 @@ def test_slug_and_ingress_url_from_api_base():
     assert slug_from_api_base("http://local-browser-companion:8100") == (
         "local_browser_companion"
     )
-    assert ingress_path("local_browser_companion") == (
-        "/hassio/ingress/local_browser_companion"
-    )
+    assert ingress_path("local_browser_companion") == "/local_browser_companion"
     assert companion_ui_url(None, "local_browser_companion") == (
-        "/hassio/ingress/local_browser_companion"
+        "/local_browser_companion"
     )
     assert companion_redirect_href("local_browser_companion") == (
-        "https://my.home-assistant.io/redirect/supervisor_ingress/"
-        "?addon=local_browser_companion"
+        "/local_browser_companion"
     )
     placeholders = companion_placeholders(None, "local_browser_companion")
-    assert placeholders["companion_url"].endswith("/hassio/ingress/local_browser_companion")
-    assert "addon=local_browser_companion" in placeholders["companion_href"]
+    assert placeholders["companion_url"] == "/local_browser_companion"
+    assert placeholders["companion_href"] == "/local_browser_companion"
 
 
 def test_endpoint_client():
@@ -112,7 +109,7 @@ def test_endpoint_client():
         base_url="http://local-browser-companion:8100",
         slug="local_browser_companion",
     )
-    assert endpoint.ingress_href == "/hassio/ingress/local_browser_companion"
+    assert endpoint.ingress_href == "/local_browser_companion"
     client = endpoint.client(AsyncMock())
     assert isinstance(client, BrowserCompanionClient)
     assert client.base_url == "http://local-browser-companion:8100"

@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## 0.2.1
+
 - Add-on store icon and logo
-- Custom components should use the `ha-browser-companion` PyPI package (`python/` in this repository) instead of copying a helper module
+- Config-flow companion link opens the sidebar panel at `/{slug}` instead of `/hassio/ingress/{slug}` and `my.home-assistant.io`
+- Custom components should use the `ha-browser-companion` PyPI package 0.1.1 (`python/` in this repository)
 
 ## 0.2.0
 

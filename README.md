@@ -3,7 +3,7 @@
 [![CI](https://github.com/Przemko92/homeassistant-browser-companion/actions/workflows/ci.yml/badge.svg)](https://github.com/Przemko92/homeassistant-browser-companion/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/ha-browser-companion.svg)](https://pypi.org/project/ha-browser-companion/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.0-informational)](browser_companion/config.yaml)
+[![Version](https://img.shields.io/badge/version-0.2.1-informational)](browser_companion/config.yaml)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/przemko92)
 
 A Home Assistant add-on that embeds **Chromium in the sidebar**. Your integration opens a login URL; the **user** completes the page (forms, captcha, 2FA); the add-on captures the matching redirect, navigation, or custom-scheme URL and returns it over HTTP.
@@ -62,7 +62,7 @@ In `manifest.json`:
 
 ```json
 {
-  "requirements": ["ha-browser-companion>=0.1.0"]
+  "requirements": ["ha-browser-companion>=0.1.1"]
 }
 ```
 
@@ -112,7 +112,7 @@ from ha_browser_companion import captured_cookie
 cookie = captured_cookie(captured, "QXLSESSID")
 ```
 
-The mixin expects translation keys `step.companion`, `step.companion_failed`, `progress.companion_wait`, and abort `companion_requires_supervisor`. Placeholders: `companion_url` (Ingress path) and `companion_href` (`my.home-assistant.io` link that opens the sidebar). Copy the JSON from [`python/README.md`](python/README.md#translations).
+The mixin expects translation keys `step.companion`, `step.companion_failed`, `progress.companion_wait`, and abort `companion_requires_supervisor`. Placeholders: `companion_url` and `companion_href` are the same sidebar panel URL (`/{slug}`). Copy the JSON from [`python/README.md`](python/README.md#translations).
 
 ### HTTP client only
 
