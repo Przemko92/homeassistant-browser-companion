@@ -1,0 +1,55 @@
+{
+  "name": "HA Supervisor + Browser Companion",
+  "image": "ghcr.io/home-assistant/devcontainer:6-apps",
+  "overrideCommand": false,
+  "remoteUser": "vscode",
+  "appPort": ["7123:80", "80:80", "8123:8123", "7357:4357"],
+  "forwardPorts": [80, 8123],
+  "portsAttributes": {
+    "80": {
+      "label": "Home Assistant (Supervisor, port 80)",
+      "onAutoForward": "notify"
+    },
+    "7123": {
+      "label": "Home Assistant (host → container :80)",
+      "onAutoForward": "notify"
+    }
+  },
+  "postStartCommand": "bash devcontainer_bootstrap",
+  "runArgs": ["-e", "GIT_EDITOR=code --wait", "--privileged"],
+  "workspaceFolder": "/mnt/supervisor/apps/local/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${containerWorkspaceFolder},type=bind,consistency=cached",
+  "containerEnv": {
+    "WORKSPACE_DIRECTORY": "${containerWorkspaceFolder}",
+    "SUPERVISOR_CHANNEL": "beta"
+  },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["timonwong.shellcheck", "esbenp.prettier-vscode"],
+      "settings": {
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/usr/bin/zsh"
+          }
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "files.trimTrailingWhitespace": true
+      }
+    }
+  },
+  "mounts": [
+    "type=volume,target=/var/lib/docker",
+    "type=volume,target=/var/lib/containerd",
+    "type=volume,target=/mnt/supervisor",
+    "type=tmpfs,target=/tmp",
+    "source=${localWorkspaceFolder}/../moja-biedronka,target=/mnt/moja-biedronka,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/../home-assistant-allegro,target=/mnt/home-assistant-allegro,type=bind,consistency=cached"
+  ]
+}
